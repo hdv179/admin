@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
     initTheme();
-    loadComponent("header", "templates/tpl-header.html");
-    loadComponent("footer", "templates/tpl-footer.html");
+    loadComponent("header", "tpl-header.html");
+    loadComponent("footer", "tpl-footer.html");
     routePageData();
 });
 
