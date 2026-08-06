@@ -16,16 +16,16 @@
             <div class="title-head">⚙️ CẤU HÌNH GITHUB</div>
             <div class="wap-card">
                 <div class="form-group"><label>Access Token:</label><input type="password" id="gh-token" class="form-control" placeholder="ghp_xxx"></div>
-                <div class="form-group"><label>Repository (user/repo):</label><input type="text" id="gh-repo" class="form-control" placeholder="user/wap"></div>
+                <div class="form-group"><label>Repository (user/repo):</label><input type="text" id="gh-repo" class="form-control" value="hdv179/wap" placeholder="hdv179/wap"></div>
                 <button type="button" class="btn btn-secondary btn-block" onclick="saveConfig()">💾 Lưu Cấu Hình</button>
             </div>
 
-            <!-- 2. TRẮC NGHIỆM & LOAD BÀI VIẾT TỰ ĐỘNG -->
-            <div class="title-head">🔍 DÂN BÀI & TÌM KIẾM</div>
+            <!-- 2. COMBOBOX DANH MỤC & DANH SÁCH BÀI VIẾT BÊN DƯỚI -->
+            <div class="title-head">🔍 QUẢN LÝ BÀI VIẾT THEO DANH MỤC</div>
             <div class="wap-card">
                 <div class="form-group">
-                    <label>Danh Mục Bài Viết:</label>
-                    <select id="search-category" class="form-control" onchange="fetchCategoryItems(this.value, true)">
+                    <label>Chọn Danh Mục:</label>
+                    <select id="search-category" class="form-control" onchange="fetchCategoryItems(this.value)">
                         <option value="gameloft">Game Gameloft</option>
                         <option value="teamobi">Game TeaMobi & Mod</option>
                         <option value="gameonline">Game Online</option>
@@ -40,19 +40,17 @@
                         <option value="thuthuat">Thủ Thuật</option>
                     </select>
                 </div>
-                <div id="category-items-list" style="max-height:120px; overflow-y:auto; font-size:11px;"></div>
-                <div class="form-group" style="margin-top:5px;">
-                    <label>ID Bài Viết Đang Chọn:</label>
-                    <div style="display:flex; gap:3px;">
-                        <input type="text" id="load-item-id" class="form-control" placeholder="avatar-250" style="flex:1;">
-                        <button type="button" class="btn" onclick="loadItemData()">📥 Tải Dữ Liệu</button>
-                    </div>
+                
+                <!-- Khu vực tự động hiển thị danh sách bài viết ngay bên dưới Combobox -->
+                <div style="margin-top: 6px; font-weight: bold; font-size: 11px; color: #333;">Danh Sách Bài Viết Trong Mục:</div>
+                <div id="category-items-list" style="max-height: 180px; overflow-y: auto; font-size: 11px; border: 1px solid #eee; padding: 4px; background: #fafafa; margin-top: 2px; border-radius: 3px;">
+                    🔄 Đang nạp danh sách...
                 </div>
             </div>
 
-            <!-- 3. FORM QUẢN LÝ BÀI VIẾT -->
-            <form id="builder-form">
-                <div class="title-head">THÔNG TIN BÀI VIẾT</div>
+            <!-- 3. FORM QUẢN LÝ / CHỈNH SỬA BÀI VIẾT -->
+            <form id="builder-form" style="margin-top: 10px;">
+                <div class="title-head">📝 THÔNG TIN BÀI VIẾT</div>
                 <div class="wap-card">
                     <div class="form-group">
                         <label>Danh Mục Đăng:</label>
@@ -83,7 +81,7 @@
                     </div>
                 </div>
 
-                <div class="title-head">NỘI DUNG & HÌNH ẢNH</div>
+                <div class="title-head">🖼️ NỘI DUNG & HÌNH ẢNH</div>
                 <div class="wap-card">
                     <div id="blocks-container"></div>
                     <div style="display:flex; gap:3px; margin-top:4px;">
@@ -92,7 +90,7 @@
                     </div>
                 </div>
 
-                <div class="title-head">KHỐI FILE TẢI VỀ</div>
+                <div class="title-head">📥 KHỐI FILE TẢI VỀ</div>
                 <div class="wap-card">
                     <div id="dl-groups-container"></div>
                     <button type="button" class="btn btn-secondary btn-block" style="margin-top:4px;" onclick="addDownloadGroup()">+ Thêm Khối File</button>
@@ -114,12 +112,20 @@
 
         // --- KHỞI TẠO VÀ CẤU HÌNH ---
         window.onload = function() {
-            if (localStorage.getItem('hdv179_gh_token')) document.getElementById('gh-token').value = localStorage.getItem('hdv179_gh_token');
-            if (localStorage.getItem('hdv179_gh_repo')) document.getElementById('gh-repo').value = localStorage.getItem('hdv179_gh_repo');
+            // Lấy Token từ kho lưu trữ (nếu có)
+            if (localStorage.getItem('hdv179_gh_token')) {
+                document.getElementById('gh-token').value = localStorage.getItem('hdv179_gh_token');
+            }
+            
+            // Lấy Repo từ kho lưu trữ, nếu chưa lưu thì mặc định 'hdv179/wap'
+            const savedRepo = localStorage.getItem('hdv179_gh_repo');
+            document.getElementById('gh-repo').value = savedRepo ? savedRepo : 'hdv179/wap';
+
             resetForm();
-            // Tự động load danh sách bài viết từ danh mục mặc định
-            const cat = document.getElementById('search-category').value;
-            if (cat) fetchCategoryItems(cat, true);
+
+            // Tự động tải danh sách bài viết của danh mục đang chọn trên combobox khi mở trang
+            const currentCat = document.getElementById('search-category').value;
+            if (currentCat) fetchCategoryItems(currentCat);
         };
 
         function saveConfig() {
@@ -135,42 +141,38 @@
             addDownloadGroup();
         }
 
-        // --- MÃ HÓA BASE64 CHẮC CHẮN CHO TIẾNG VIỆT (UTF-8) ---
+        // Mã hóa UTF-8 sang Base64
         const toB64 = str => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1)));
         const fromB64 = str => decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
 
-        // --- TẢI TỰ ĐỘNG DANH SÁCH BÀI THEO DANH MỤC ---
-        async function fetchCategoryItems(cat, autoLoadFirst = false) {
+        // --- HÀM TẢI DANH SÁCH BÀI VIẾT NẰM NGAY DƯỚI COMBOBOX ---
+        async function fetchCategoryItems(cat) {
             const container = document.getElementById('category-items-list');
             if (!cat) return container.innerHTML = '';
-            container.innerHTML = '🔄 Đang tải danh sách...';
+            container.innerHTML = '🔄 Đang tải danh sách bài viết...';
 
             try {
                 const res = await fetch(`data/index/${cat}.json?v=${Date.now()}`);
                 if (!res.ok) throw new Error();
                 const items = await res.json();
-                if (!items.length) return container.innerHTML = '<div style="color:#666;">Danh mục trống.</div>';
+
+                if (!items || items.length === 0) {
+                    container.innerHTML = '<div style="color:#666; font-style:italic;">Danh mục này chưa có bài viết nào.</div>';
+                    return;
+                }
 
                 container.innerHTML = items.map(item => `
-                    <div style="padding:2px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
-                        <span><b>${item.id}</b> - ${item.title.replace(/"/g, '&quot;')}</span>
-                        <button type="button" class="btn btn-secondary" style="font-size:9px; padding:1px 5px;" onclick="selectItem('${item.id}')">Chọn</button>
+                    <div style="padding: 3px 0; border-bottom: 1px dashed #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
+                        <span>🔹 <b>${item.id}</b> - ${item.title ? item.title.replace(/"/g, '&quot;') : ''}</span>
+                        <button type="button" class="btn btn-secondary" style="font-size: 9px; padding: 1px 6px;" onclick="loadItemData('${item.id}')">Sửa / Tải</button>
                     </div>
                 `).join('');
-
-                // Nạp bài viết đầu tiên tự động
-                if (autoLoadFirst && items.length > 0) selectItem(items[0].id);
             } catch (err) {
-                container.innerHTML = `<div style="color:red;">Không tìm thấy tệp index: [${cat}.json]</div>`;
+                container.innerHTML = `<div style="color:#cc0000; font-style:italic;">Chưa có tệp dữ liệu danh mục [data/index/${cat}.json]</div>`;
             }
         }
 
-        function selectItem(id) {
-            document.getElementById('load-item-id').value = id;
-            loadItemData();
-        }
-
-        // --- XỬ LÝ GIAO DIỆN FORM (BLOCKS & FILE GROUPS) ---
+        // --- XỬ LÝ FORM & THÊM BLOCK ---
         function addBlock(type, val = '', caption = '') {
             const div = document.createElement('div');
             div.className = 'wap-card content-block-item';
@@ -225,7 +227,7 @@
             row.innerHTML = `
                 <div style="display:flex; gap:3px;">
                     <input type="text" class="form-control file-label" placeholder="Tên File (.JAR)" value="${label}" style="flex:1;">
-                    <input type="text" class="form-control custom-file-name" id="${uid}-custom" placeholder="Tên file tùy chọn" style="flex:1;">
+                    <input type="text" class="form-control custom-file-name" id="${uid}-custom" placeholder="Tên tệp tùy chọn" style="flex:1;">
                 </div>
                 <div style="display:flex; gap:3px;">
                     <select id="${uid}-screen" class="form-control file-screen" style="flex:1;">
@@ -247,7 +249,7 @@
             container.appendChild(row);
         }
 
-        // --- UPLOAD TỆP TRỰC TIẾP LÊN GITHUB API ---
+        // --- UPLOAD TỆP LÊN GITHUB API ---
         function triggerUpload(uid, folderPath, isImage) {
             const file = document.getElementById(`${uid}-file`).files[0];
             if (!file) return;
@@ -286,15 +288,14 @@
             reader.readAsDataURL(file);
         }
 
-        // --- LẤY CHI TIẾT BÀI VIẾT TỪ GITHUB ---
-        async function loadItemData() {
-            const id = document.getElementById('load-item-id').value.trim();
-            if (!id) return alert('Chưa chọn Mã ID!');
+        // --- LOAD DỮ LIỆU BÀI VIẾT KHI BẤM NÚT "SỬA / TẢI" ---
+        async function loadItemData(id) {
+            if (!id) return alert('Không tìm thấy Mã ID!');
             showStatus(`⏳ Đang tải bài [${id}]...`, 'success');
 
             try {
                 const res = await fetch(`data/items/${id}.json?v=${Date.now()}`);
-                if (!res.ok) throw new Error('Bài viết không tồn tại');
+                if (!res.ok) throw new Error('Bài viết chưa có dữ liệu chi tiết');
                 const d = await res.json();
 
                 document.getElementById('game-id').value = d.id || '';
@@ -311,11 +312,12 @@
                 groupCounter = 0;
                 (d.downloads || [{}]).forEach(g => addDownloadGroup(g.groupTitle, g.files));
 
-                showStatus(`✅ Đã nạp thành công [${id}]!`, 'success');
+                showStatus(`✅ Đã nạp bài viết [${id}] vào Form!`, 'success');
+                document.getElementById('builder-form').scrollIntoView({ behavior: 'smooth' });
             } catch (err) { showStatus(`❌ ${err.message}`, 'error'); }
         }
 
-        // --- ĐĂNG / CẬP NHẬT BÀI VIẾT SANG GITHUB API ---
+        // --- ĐĂNG / CẬP NHẬT BÀI VIẾT ---
         document.getElementById('builder-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const token = document.getElementById('gh-token').value.trim();
@@ -357,7 +359,7 @@
             };
 
             try {
-                // 1. Cập nhật file chi tiết sản phẩm: data/items/{id}.json
+                // 1. Lưu file chi tiết: data/items/{id}.json
                 const itemUrl = `https://api.github.com/repos/${repo}/contents/data/items/${itemId}.json`;
                 let itemSha = null;
                 const iCheck = await fetch(itemUrl, { headers: { 'Authorization': `token ${token}` } });
@@ -369,7 +371,7 @@
                     body: JSON.stringify({ message: `Save item: ${itemId}`, content: toB64(JSON.stringify(itemPayload, null, 2)), sha: itemSha })
                 });
 
-                // 2. Cập nhật file Index chuyên mục: data/index/{category}.json
+                // 2. Cập nhật Index danh mục: data/index/{category}.json
                 const idxUrl = `https://api.github.com/repos/${repo}/contents/data/index/${category}.json`;
                 let idxItems = [], idxSha = null;
                 const idxCheck = await fetch(idxUrl, { headers: { 'Authorization': `token ${token}` } });
@@ -379,7 +381,6 @@
                     idxItems = JSON.parse(fromB64(d.content));
                 }
 
-                // Xóa cũ thêm mới để lên đầu danh sách
                 idxItems = idxItems.filter(i => i.id !== itemId);
                 idxItems.unshift({ id: itemId, title: itemPayload.title, vendor: itemPayload.vendor, screen: itemPayload.screen, thumb: thumbUrl });
 
@@ -389,12 +390,12 @@
                     body: JSON.stringify({ message: `Update index: ${category}`, content: toB64(JSON.stringify(idxItems, null, 2)), sha: idxSha })
                 });
 
-                showStatus('🎉 Lưu bài viết thành công!', 'success');
-                fetchCategoryItems(category); // Load lại danh sách bài
+                showStatus('🎉 Lưu thành công!', 'success');
+                fetchCategoryItems(category); // Tải lại danh sách danh mục vừa chọn
             } catch (err) { showStatus(`❌ Lỗi: ${err.message}`, 'error'); }
         });
 
-        // --- XÓA BÀI VIẾT TRÊN GITHUB ---
+        // --- XÓA BÀI VIẾT ---
         async function deleteItem() {
             const token = document.getElementById('gh-token').value.trim();
             const repo = document.getElementById('gh-repo').value.trim();
@@ -405,7 +406,6 @@
             showStatus(`⏳ Đang xóa [${itemId}]...`, 'error');
 
             try {
-                // Xóa file chi tiết
                 const itemUrl = `https://api.github.com/repos/${repo}/contents/data/items/${itemId}.json`;
                 const iCheck = await fetch(itemUrl, { headers: { 'Authorization': `token ${token}` } });
                 if (iCheck.ok) {
@@ -416,7 +416,6 @@
                     });
                 }
 
-                // Loại bỏ khỏi file index
                 const idxUrl = `https://api.github.com/repos/${repo}/contents/data/index/${category}.json`;
                 const idxCheck = await fetch(idxUrl, { headers: { 'Authorization': `token ${token}` } });
                 if (idxCheck.ok) {
@@ -425,7 +424,7 @@
                     await fetch(idxUrl, {
                         method: 'PUT',
                         headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: `Remove ${itemId} from ${category}`, content: toB64(JSON.stringify(idxItems, null, 2)), sha: d.sha })
+                        body: JSON.stringify({ message: `Remove ${itemId}`, content: toB64(JSON.stringify(idxItems, null, 2)), sha: d.sha })
                     });
                 }
 
