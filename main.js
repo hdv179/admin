@@ -5,8 +5,6 @@ document.addEventListener("DOMContentLoaded", function () {
     routePageData();
 });
 
-// --- QUẢN LÝ GIAO DIỆN & TIỆN ÍCH --- //
-
 function initTheme() {
     const savedTheme = localStorage.getItem("hdv179_theme") || "default";
     document.documentElement.setAttribute("data-theme", savedTheme);
@@ -20,7 +18,7 @@ function setTheme(themeName) {
 function loadComponent(elementId, filePath) {
     const targetEl = document.getElementById(elementId);
     if (targetEl) {
-        // Chống cache template HTML
+        // Bổ sung timestamp chống cache template HTML trên Cloudflare
         fetch(`${filePath}?v=${Date.now()}`)
             .then(res => res.text())
             .then(html => { targetEl.innerHTML = html; })
@@ -45,18 +43,17 @@ function createItemCardHtml(item) {
     `;
 }
 
-// --- BỘ ĐIỀU HƯỚNG VÀ RENDER NỘI DUNG --- //
-
+// --- FIX LỖI CLOUDFLARE PRETTY URL TẠI ĐÂY --- //
 function routePageData() {
     const cat = getUrlParam('cat') || 'gameloft';
     const id = getUrlParam('id');
     const query = getUrlParam('q');
 
-    // 1. Kiểm tra trang Chi tiết bài viết
+    // 1. Kiểm tra nếu đang ở trang chi tiết bài viết
     if (document.getElementById('post-detail') && id) {
         renderDetailPage(id);
     } 
-    // 2. Kiểm tra trang Danh mục hoặc Tìm kiếm (Tương thích Clean URL / Pretty URL)
+    // 2. Kiểm tra nếu đang ở trang Danh mục / Tìm kiếm (Tương thích cả /category và /category.html)
     else if (document.getElementById('post-list')) {
         const catTitle = document.getElementById('category-title');
         if (query) {
@@ -68,7 +65,7 @@ function routePageData() {
             renderListPage(cat, page);
         }
     } 
-    // 3. Kiểm tra Trang chủ (Tự động quét tất cả 13 chuyên mục)
+    // 3. Kiểm tra nếu đang ở Trang chủ (Có chứa khối home-gameloft)
     else if (document.getElementById('home-gameloft')) {
         const homeCategories = [
             'gameloft', 'teamobi', 'gameonline', 'gameoffline', 
