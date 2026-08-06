@@ -76,6 +76,7 @@ function addDownloadGroup(title = '', files = []) {
     groupCounter++;
     const groupDiv = document.createElement('div');
     groupDiv.className = 'wap-card dl-group-item';
+    groupDiv.style.cssText = 'width: 100%; box-sizing: border-box; text-align: left;';
     const gId = `dl-files-${groupCounter}`;
 
     groupDiv.innerHTML = `
@@ -83,8 +84,8 @@ function addDownloadGroup(title = '', files = []) {
             <strong style="color:var(--primary-main,#007bff)">Khối File #${groupCounter}</strong>
             <button type="button" class="btn btn-danger btn-remove">Xóa Khối</button>
         </div>
-        <input type="text" class="form-control group-title" placeholder="Tiêu đề khối" value="${title}" style="margin-bottom:3px;">
-        <div id="${gId}"></div>
+        <input type="text" class="form-control group-title" placeholder="Tiêu đề khối" value="${title}" style="margin-bottom:3px; width:100%; box-sizing:border-box;">
+        <div id="${gId}" style="width:100%;"></div>
         <button type="button" class="btn btn-secondary btn-block btn-add-file" data-gid="${gId}">+ Thêm File</button>
     `;
     document.getElementById('dl-groups-container').appendChild(groupDiv);
@@ -101,24 +102,25 @@ function addFileRow(gId, label = '', url = '', screenVal = 'Multi', osVal = 's40
 
     const row = document.createElement('div');
     row.className = 'file-row';
-    row.style.cssText = 'border-bottom:1px dashed #ccc; padding-bottom:4px; margin-bottom:4px; display:flex; flex-direction:column; gap:3px;';
+    row.style.cssText = 'border-bottom:1px dashed #ccc; padding-bottom:6px; margin-bottom:6px; display:flex; flex-direction:column; gap:4px; width:100%; box-sizing:border-box; text-align:left;';
+    
     row.innerHTML = `
-        <div style="display:flex; gap:3px;">
-            <input type="text" class="form-control file-label" placeholder="Tên File (.JAR)" value="${label}" style="flex:1;">
-            <input type="text" class="form-control custom-file-name" id="${uid}-custom" placeholder="Tên tệp tùy chọn" style="flex:1;">
+        <div style="display:flex; gap:4px; width:100%;">
+            <input type="text" class="form-control file-label" placeholder="Tên hiển thị (.JAR)" value="${label}" style="flex:1; min-width:0; width:100%; box-sizing:border-box;">
+            <input type="text" class="form-control custom-file-name" id="${uid}-custom" placeholder="Tên tệp tùy chọn" style="flex:1; min-width:0; width:100%; box-sizing:border-box;">
         </div>
-        <div style="display:flex; gap:3px;">
-            <select id="${uid}-screen" class="form-control file-screen" style="flex:1;">
+        <div style="display:flex; gap:4px; width:100%;">
+            <select id="${uid}-screen" class="form-control file-screen" style="flex:1; min-width:0; width:100%; box-sizing:border-box;">
                 ${screens.map(s => `<option value="${s}" ${screenVal === s ? 'selected' : ''}>${s}</option>`).join('')}
             </select>
-            <select id="${uid}-os" class="form-control file-os" style="flex:1;">
+            <select id="${uid}-os" class="form-control file-os" style="flex:1; min-width:0; width:100%; box-sizing:border-box;">
                 <option value="s40" ${osVal === 's40' ? 'selected' : ''}>s40</option>
                 <option value="s60" ${osVal === 's60' ? 'selected' : ''}>s60</option>
                 <option value="android" ${osVal === 'android' ? 'selected' : ''}>Android</option>
             </select>
         </div>
-        <div class="upload-box" style="display:flex; gap:3px;">
-            <input type="text" class="form-control file-url" id="${uid}-input" placeholder="assets/files/..." value="${url}" style="flex:1;">
+        <div class="upload-box" style="display:flex; gap:4px; width:100%;">
+            <input type="text" class="form-control file-url" id="${uid}-input" placeholder="assets/files/..." value="${url}" style="flex:1; min-width:0; width:100%; box-sizing:border-box;">
             <input type="file" id="${uid}-file" class="upload-file-input" data-uid="${uid}" data-folder="assets/files" data-is-image="false" style="display:none;">
             <button type="button" class="btn btn-upload btn-trigger-file" data-target="${uid}-file">📤 Up</button>
             <button type="button" class="btn btn-danger btn-remove-row">X</button>
@@ -156,7 +158,7 @@ function handleDynamicUploads(e) {
     }
 }
 
-// --- GITHUB API API OPERATIONS ---
+// --- GITHUB API OPERATIONS ---
 async function fetchCategoryItems(cat) {
     const container = document.getElementById('category-items-list');
     if (!cat) return container.innerHTML = '';
