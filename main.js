@@ -36,7 +36,7 @@ function createItemCardHtml(item) {
             <img src="${item.thumb || 'assets/images/default.png'}" style="width:36px; height:36px; object-fit:cover; border:1px solid var(--border-color);">
             <div style="flex:1; overflow:hidden;">
                 <a href="detail.html?id=${item.id}" style="font-weight:bold; color:var(--primary-main);">${item.title}</a>
-                <div style="font-size:10px; color:#555;">📱 ${item.screen} | 👤 ${item.vendor}</div>
+                <div style="font-size:10px; color:#555;">📱 ${item.screen || 'N/A'} | 👤 ${item.vendor || 'N/A'}</div>
             </div>
         </div>
     `;
@@ -72,12 +72,20 @@ function renderSearchResults(query) {
     if (!listContainer) return;
 
     listContainer.innerHTML = '<div class="wap-card">🔄 Đang tìm kiếm...</div>';
-    const categories = ['gameloft', 'teamobi', 'ungdung', 'online', 'offline'];
+    
+    // Đã cập nhật đầy đủ 13 danh mục theo yêu cầu
+    const categories = [
+        'gameloft', 'teamobi', 'gameonline', 'gameoffline', 
+        'gameviethoa', 'trinhduyet', 'ungdung', 'hinhnen', 
+        'nhacchuong', 'chude', 'doctruyen', 'thuthuat'
+    ];
     
     Promise.all(categories.map(cat => fetch(`data/index/${cat}.json`).then(r => r.ok ? r.json() : []).catch(() => [])))
         .then(results => {
             const matchedItems = results.flat().filter(item => 
-                item.title.toLowerCase().includes(query) || (item.vendor && item.vendor.toLowerCase().includes(query))
+                (item.title && item.title.toLowerCase().includes(query)) || 
+                (item.vendor && item.vendor.toLowerCase().includes(query)) ||
+                (item.id && item.id.toLowerCase().includes(query))
             );
 
             if (!matchedItems.length) {
