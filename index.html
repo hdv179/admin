@@ -234,39 +234,60 @@
         }
 
         function addFileRow(groupId, label = '', url = '', screenVal = 'Multi', osVal = 's40') {
-            const container = document.getElementById(groupId);
-            const row = document.createElement('div');
-            const uid = 'file-' + Date.now() + Math.random().toString(36).substr(2, 2);
-            row.className = 'file-row';
-            row.style.cssText = 'flex-direction:column; border-bottom:1px dashed #ccc; padding-bottom:4px; margin-bottom:4px;';
+    const container = document.getElementById(groupId);
+    if (!container) return;
 
-            row.innerHTML = `
-                <div style="display:flex; gap:2px;">
-                    <input type="text" class="form-control file-label" placeholder="Tên hiển thị (.JAR)" value="${label}" style="flex:1;">
-                    <input type="text" class="form-control custom-file-name" id="${uid}-custom" placeholder="Tên file tùy chọn" style="flex:1;">
-                </div>
-                <div style="display:flex; gap:2px; margin-top:2px;">
-                    <select id="${uid}-screen" class="form-control file-screen" style="flex:1;">
-                        <option value="Multi" ${screenVal==='Multi'?'selected':''}>Multi</option>
-                        <option value="240x320" ${screenVal==='240x320'?'selected':''}>240x320</option>
-                        <option value="320x240" ${screenVal==='320x240'?'selected':''}>320x240</option>
-                        <option value="128x160" ${screenVal==='128x160'?'selected':''}>128x160</option>
-                    </select>
-                    <select id="${uid}-os" class="form-control file-os" style="flex:1;">
-                        <option value="s40" ${osVal==='s40'?'selected':''}>s40</option>
-                        <option value="s60" ${osVal==='s60'?'selected':''}>s60</option>
-                        <option value="android" ${osVal==='android'?'selected':''}>Android</option>
-                    </select>
-                </div>
-                <div class="upload-box">
-                    <input type="text" class="form-control file-url" id="${uid}-input" placeholder="assets/files/..." value="${url}" style="flex:1;">
-                    <input type="file" id="${uid}-file" class="file-input-hidden" onchange="triggerUpload('${uid}', 'assets/files', false)">
-                    <button type="button" class="btn btn-upload" onclick="document.getElementById('${uid}-file').click()">📤 Upload</button>
-                    <button type="button" class="btn btn-danger" onclick="this.closest('.file-row').remove()">X</button>
-                </div>
-            `;
-            container.appendChild(row);
-        }
+    const row = document.createElement('div');
+    const uid = 'file-' + Date.now() + Math.random().toString(36).substr(2, 4);
+    
+    row.className = 'file-row';
+    // Đảm bảo row chiếm full 100% chiều rộng và áp dụng box-sizing
+    row.style.cssText = 'display: flex; flex-direction: column; width: 100%; box-sizing: border-box; border-bottom: 1px dashed #ccc; padding-bottom: 6px; margin-bottom: 6px; gap: 4px;';
+
+    // Danh sách đầy đủ độ phân giải màn hình phổ biến cho game Java/Symbian/Android
+    const screens = [
+        'Multi',
+        '128x128',
+        '128x160',
+        '176x208',
+        '176x220',
+        '208x208',
+        '240x320',
+        '320x240',
+        '240x400',
+        '360x640',
+        '480x800'
+    ];
+
+    const screenOptionsHtml = screens
+        .map(sc => `<option value="${sc}" ${screenVal === sc ? 'selected' : ''}>${sc}</option>`)
+        .join('');
+
+    row.innerHTML = `
+        <div style="display: flex; gap: 4px; width: 100%; box-sizing: border-box;">
+            <input type="text" class="form-control file-label" placeholder="Tên hiển thị (.JAR)" value="${label}" style="flex: 1; min-width: 0;">
+            <input type="text" class="form-control custom-file-name" id="${uid}-custom" placeholder="Tên file tùy chọn" style="flex: 1; min-width: 0;">
+        </div>
+        <div style="display: flex; gap: 4px; width: 100%; box-sizing: border-box;">
+            <select id="${uid}-screen" class="form-control file-screen" style="flex: 1; min-width: 0;">
+                ${screenOptionsHtml}
+            </select>
+            <select id="${uid}-os" class="form-control file-os" style="flex: 1; min-width: 0;">
+                <option value="s40" ${osVal === 's40' ? 'selected' : ''}>s40</option>
+                <option value="s60" ${osVal === 's60' ? 'selected' : ''}>s60</option>
+                <option value="android" ${osVal === 'android' ? 'selected' : ''}>Android</option>
+            </select>
+        </div>
+        <div class="upload-box" style="display: flex; gap: 4px; width: 100%; box-sizing: border-box; align-items: center;">
+            <input type="text" class="form-control file-url" id="${uid}-input" placeholder="assets/files/..." value="${url}" style="flex: 1; min-width: 0;">
+            <input type="file" id="${uid}-file" class="file-input-hidden" style="display:none;" onchange="triggerUpload('${uid}', 'assets/files', false)">
+            <button type="button" class="btn btn-upload" style="white-space: nowrap;" onclick="document.getElementById('${uid}-file').click()">📤 Upload</button>
+            <button type="button" class="btn btn-danger" style="white-space: nowrap;" onclick="this.closest('.file-row').remove()">X</button>
+        </div>
+    `;
+
+    container.appendChild(row);
+}
 
         function triggerUpload(uid, folderPath, isImage = false) {
             const fileInput = document.getElementById(`${uid}-file`);
