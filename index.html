@@ -7,27 +7,36 @@
     <link rel="stylesheet" href="style.css">
     <script src="main.js"></script>
     <style>
-        /* Tối ưu hóa khung viền chống tràn chiều ngang cho WAP */
+        /* Tối ưu hóa khung viền chống tràn chiều ngang */
         *, *:before, *:after {
             box-sizing: border-box !important;
         }
 
-        /* Khóa độ rộng chuẩn WAP, căn giữa màn hình */
-        body {
-            margin: 0 auto;
+        /* Nền chung cho toàn bộ trang web */
+        html, body {
+            margin: 0;
             padding: 0;
             width: 100%;
-            max-width: 480px; /* Giới hạn chiều ngang tối đa chuẩn WAP */
-            background-color: #f4f4f4; /* Nền xám nhẹ ngoài khung WAP nếu xem trên PC */
+            background-color: #f4f4f4; /* Màu nền ngoài khung WAP trên PC */
+            display: flex;
+            justify-content: center; /* Căn giữa khung WAP ra chính giữa màn hình */
+        }
+
+        /* Khung bọc toàn bộ giao diện WAP (Bao gồm Header, Content, Footer) */
+        .wap-container {
+            width: 100%;
+            max-width: 480px; /* Giới hạn chiều ngang chuẩn WAP */
+            margin: 0 auto;
+            background-color: #ffffff;
+            min-height: 100vh;
             overflow-x: hidden;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); /* Đổ bóng nhẹ cho đẹp trên PC */
         }
 
         .wap-wrapper {
-            background-color: #ffffff;
             padding: 4px;
             width: 100%;
             box-sizing: border-box;
-            min-height: 100vh;
         }
 
         .wap-card, form {
@@ -40,7 +49,7 @@
             width: 100% !important;
             max-width: 100% !important;
             box-sizing: border-box !important;
-            resize: vertical; /* Chỉ kéo dãn dọc */
+            resize: vertical;
             word-wrap: break-word;
             white-space: pre-wrap;
         }
@@ -52,97 +61,102 @@
     </style>
 </head>
 <body>
-    <div id="header"></div>
 
-    <!-- Bọc toàn bộ nội dung trong wrapper để khóa chiều ngang -->
-    <div class="wap-wrapper">
-        <!-- CẤU HÌNH API -->
-        <div class="title-head">⚙️ CẤU HÌNH GITHUB API</div>
-        <div class="wap-card">
-            <div class="form-group">
-                <label>GitHub Personal Access Token:</label>
-                <input type="password" id="gh-token" class="form-control" placeholder="ghp_xxxxxxxxxxxx">
-            </div>
-            <div class="form-group">
-                <label>Đường Dẫn Repo (username/repository):</label>
-                <input type="text" id="gh-repo" class="form-control" placeholder="username/hdv179-wap">
-            </div>
-            <button type="button" class="btn btn-secondary btn-block" onclick="saveConfig()">💾 Lưu Cấu Hình</button>
-        </div>
+    <!-- Khung chứa chung để căn giữa toàn bộ Header, Nội dung và Footer -->
+    <div class="wap-container">
+        
+        <div id="header"></div>
 
-        <!-- TÌM BÀI VIẾT ĐỂ SỬA HOẶC XÓA -->
-        <div class="title-head">🔍 QUẢN LÝ / BÀI VIẾT ĐÃ ĐĂNG</div>
-        <div class="wap-card">
-            <div class="form-group">
-                <label>Nhập Mã ID Bài Viết (ví dụ: avatar-250):</label>
-                <div style="display: flex; gap: 3px;">
-                    <input type="text" id="load-item-id" class="form-control" placeholder="avatar-250" style="flex:1;">
-                    <button type="button" class="btn" onclick="loadItemData()">📥 Tải Dữ Liệu</button>
-                </div>
-            </div>
-            <div style="font-size: 11px; color: #666; margin-top: 2px;">(Tải dữ liệu bài viết cũ lên form để chỉnh sửa hoặc xóa)</div>
-        </div>
-
-        <!-- FORM TẠO / SỬA BÀI VIẾT -->
-        <form id="builder-form">
-            <div class="title-head">THÔNG TIN BÀI VIẾT</div>
+        <div class="wap-wrapper">
+            <!-- CẤU HÌNH API -->
+            <div class="title-head">⚙️ CẤU HÌNH GITHUB API</div>
             <div class="wap-card">
                 <div class="form-group">
-                    <label>Chuyên Mục Target:</label>
-                    <select id="game-category" class="form-control">
-                        <option value="gameloft">Game Gameloft</option>
-                        <option value="teamobi">Game TeaMobi & Mod</option>
-                        <option value="online">Game Online</option>
-                        <option value="offline">Game Offline</option>
-                        <option value="ungdung">Ứng Dụng</option>
-                    </select>
+                    <label>GitHub Personal Access Token:</label>
+                    <input type="password" id="gh-token" class="form-control" placeholder="ghp_xxxxxxxxxxxx">
                 </div>
                 <div class="form-group">
-                    <label>Mã Định Danh (ID bài viết):</label>
-                    <input type="text" id="game-id" class="form-control" placeholder="avatar-250" required>
+                    <label>Đường Dẫn Repo (username/repository):</label>
+                    <input type="text" id="gh-repo" class="form-control" placeholder="username/hdv179-wap">
                 </div>
+                <button type="button" class="btn btn-secondary btn-block" onclick="saveConfig()">💾 Lưu Cấu Hình</button>
+            </div>
+
+            <!-- TÌM BÀI VIẾT ĐỂ SỬA HOẶC XÓA -->
+            <div class="title-head">🔍 QUẢN LÝ / BÀI VIẾT ĐÃ ĐĂNG</div>
+            <div class="wap-card">
                 <div class="form-group">
-                    <label>Tiêu Đề Bài Viết / Tên Game:</label>
-                    <input type="text" id="game-title" class="form-control" placeholder="Avatar 250 Auto Farm" required>
-                </div>
-                <div class="form-group">
-                    <label>Nhà Phát Triển / Tác Giả:</label>
-                    <input type="text" id="game-vendor" class="form-control" placeholder="TeaMobi">
-                </div>
-                <div class="form-group">
-                    <label>Màn Hình & Phiên Bản:</label>
+                    <label>Nhập Mã ID Bài Viết (ví dụ: avatar-250):</label>
                     <div style="display: flex; gap: 3px;">
-                        <input type="text" id="game-screen" class="form-control" placeholder="240x320" value="Multi screen" style="flex:1;">
-                        <input type="text" id="game-version" class="form-control" placeholder="v2.5.0" value="1.0" style="flex:1;">
+                        <input type="text" id="load-item-id" class="form-control" placeholder="avatar-250" style="flex:1;">
+                        <button type="button" class="btn" onclick="loadItemData()">📥 Tải Dữ Liệu</button>
                     </div>
                 </div>
+                <div style="font-size: 11px; color: #666; margin-top: 2px;">(Tải dữ liệu bài viết cũ lên form để chỉnh sửa hoặc xóa)</div>
             </div>
 
-            <div class="title-head">NỘI DUNG & HÌNH ẢNH</div>
-            <div class="wap-card">
-                <div id="blocks-container" style="width: 100%;"></div>
-                <div style="display: flex; gap: 3px; margin-top: 4px;">
-                    <button type="button" class="btn btn-secondary" style="flex:1;" onclick="addContentBlock('text')">+ Đoạn Văn</button>
-                    <button type="button" class="btn btn-secondary" style="flex:1;" onclick="addContentBlock('image')">+ Ảnh Minh Họa</button>
+            <!-- FORM TẠO / SỬA BÀI VIẾT -->
+            <form id="builder-form">
+                <div class="title-head">THÔNG TIN BÀI VIẾT</div>
+                <div class="wap-card">
+                    <div class="form-group">
+                        <label>Chuyên Mục Target:</label>
+                        <select id="game-category" class="form-control">
+                            <option value="gameloft">Game Gameloft</option>
+                            <option value="teamobi">Game TeaMobi & Mod</option>
+                            <option value="online">Game Online</option>
+                            <option value="offline">Game Offline</option>
+                            <option value="ungdung">Ứng Dụng</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Mã Định Danh (ID bài viết):</label>
+                        <input type="text" id="game-id" class="form-control" placeholder="avatar-250" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tiêu Đề Bài Viết / Tên Game:</label>
+                        <input type="text" id="game-title" class="form-control" placeholder="Avatar 250 Auto Farm" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nhà Phát Triển / Tác Giả:</label>
+                        <input type="text" id="game-vendor" class="form-control" placeholder="TeaMobi">
+                    </div>
+                    <div class="form-group">
+                        <label>Màn Hình & Phiên Bản:</label>
+                        <div style="display: flex; gap: 3px;">
+                            <input type="text" id="game-screen" class="form-control" placeholder="240x320" value="Multi screen" style="flex:1;">
+                            <input type="text" id="game-version" class="form-control" placeholder="v2.5.0" value="1.0" style="flex:1;">
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="title-head">KHỐI FILE TẢI VỀ</div>
-            <div class="wap-card">
-                <div id="dl-groups-container" style="width: 100%;"></div>
-                <button type="button" class="btn btn-secondary btn-block" style="margin-top:4px;" onclick="addDownloadGroup()">+ Thêm Khối Tải Về</button>
-            </div>
+                <div class="title-head">NỘI DUNG & HÌNH ẢNH</div>
+                <div class="wap-card">
+                    <div id="blocks-container" style="width: 100%;"></div>
+                    <div style="display: flex; gap: 3px; margin-top: 4px;">
+                        <button type="button" class="btn btn-secondary" style="flex:1;" onclick="addContentBlock('text')">+ Đoạn Văn</button>
+                        <button type="button" class="btn btn-secondary" style="flex:1;" onclick="addContentBlock('image')">+ Ảnh Minh Họa</button>
+                    </div>
+                </div>
 
-            <div style="display: flex; gap: 3px; margin: 8px 0;">
-                <button type="submit" class="btn btn-block" style="flex:2; padding: 6px;">🚀 CẬP NHẬT / ĐĂNG BÀI</button>
-                <button type="button" class="btn btn-danger btn-block" style="flex:1; padding: 6px;" onclick="deleteItem()">🗑️ XÓA BÀI</button>
-            </div>
-        </form>
+                <div class="title-head">KHỐI FILE TẢI VỀ</div>
+                <div class="wap-card">
+                    <div id="dl-groups-container" style="width: 100%;"></div>
+                    <button type="button" class="btn btn-secondary btn-block" style="margin-top:4px;" onclick="addDownloadGroup()">+ Thêm Khối Tải Về</button>
+                </div>
 
-        <div id="status-msg"></div>
+                <div style="display: flex; gap: 3px; margin: 8px 0;">
+                    <button type="submit" class="btn btn-block" style="flex:2; padding: 6px;">🚀 CẬP NHẬT / ĐĂNG BÀI</button>
+                    <button type="button" class="btn btn-danger btn-block" style="flex:1; padding: 6px;" onclick="deleteItem()">🗑️ XÓA BÀI</button>
+                </div>
+            </form>
+
+            <div id="status-msg"></div>
+        </div>
+
+        <div id="footer"></div>
+
     </div>
-
-    <div id="footer"></div>
 
     <script>
         window.onload = function() {
@@ -210,7 +224,7 @@
 
             groupDiv.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
-                    <strong style="color:var(--primary-main);">Khối File #${groupCounter}</strong>
+                    <strong style="color:var(--primary-main, #007bff);">Khối File #${groupCounter}</strong>
                     <button type="button" class="btn btn-danger" onclick="this.closest('.dl-group-item').remove()">Xóa Khối</button>
                 </div>
                 <input type="text" class="form-control group-title" placeholder="Tiêu đề khối" value="${title}" style="margin-bottom:3px;">
