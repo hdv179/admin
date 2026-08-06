@@ -27,11 +27,31 @@
                 <button type="button" class="btn btn-secondary btn-block" onclick="saveConfig()">💾 Lưu Cấu Hình</button>
             </div>
 
-            <!-- TÌM BÀI VIẾT -->
-            <div class="title-head">🔍 QUẢN LÝ BÀI VIẾT</div>
+            <!-- TÌM BÀI VIẾT TỰ ĐỘNG THEO DANH MỤC -->
+            <div class="title-head">🔍 QUẢN LÝ & TÌM BÀI VIẾT</div>
             <div class="wap-card">
                 <div class="form-group">
-                    <label>Nhập Mã ID Bài Viết:</label>
+                    <label>Chọn Danh Mục Tìm Kiếm Bài Có Sẵn:</label>
+                    <select id="search-category" class="form-control" onchange="fetchCategoryItems(this.value)">
+                        <option value="">-- Chọn danh mục --</option>
+                        <option value="gameloft">Game Gameloft</option>
+                        <option value="teamobi">Game TeaMobi & Mod</option>
+                        <option value="gameonline">Game Online</option>
+                        <option value="gameoffline">Game Offline</option>
+                        <option value="gameviethoa">Game Việt Hóa</option>
+                        <option value="trinhduyet">Trình Duyệt</option>
+                        <option value="ungdung">Ứng Dụng</option>
+                        <option value="hinhnen">Hình Nền</option>
+                        <option value="nhacchuong">Nhạc Chuông</option>
+                        <option value="chude">Chủ Đề (Theme)</option>
+                        <option value="doctruyen">Đọc Truyện</option>
+                        <option value="thuthuat">Thủ Thuật</option>
+                    </select>
+                </div>
+                <div id="category-items-list" style="max-height:150px; overflow-y:auto; margin-top:5px; font-size:11px;"></div>
+                <hr style="margin:8px 0; border:0; border-top:1px dashed #ccc;">
+                <div class="form-group">
+                    <label>Nhập Mã ID Bài Viết Để Tải:</label>
                     <div style="display: flex; gap: 3px;">
                         <input type="text" id="load-item-id" class="form-control" placeholder="avatar-250" style="flex:1;">
                         <button type="button" class="btn" onclick="loadItemData()">📥 Tải Dữ Liệu</button>
@@ -48,9 +68,16 @@
                         <select id="game-category" class="form-control">
                             <option value="gameloft">Game Gameloft</option>
                             <option value="teamobi">Game TeaMobi & Mod</option>
-                            <option value="online">Game Online</option>
-                            <option value="offline">Game Offline</option>
+                            <option value="gameonline">Game Online</option>
+                            <option value="gameoffline">Game Offline</option>
+                            <option value="gameviethoa">Game Việt Hóa</option>
+                            <option value="trinhduyet">Trình Duyệt</option>
                             <option value="ungdung">Ứng Dụng</option>
+                            <option value="hinhnen">Hình Nền</option>
+                            <option value="nhacchuong">Nhạc Chuông</option>
+                            <option value="chude">Chủ Đề (Theme)</option>
+                            <option value="doctruyen">Đọc Truyện</option>
+                            <option value="thuthuat">Thủ Thuật</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -119,6 +146,36 @@
             document.getElementById('dl-groups-container').innerHTML = '';
             addContentBlock('text');
             addDownloadGroup();
+        }
+
+        async function fetchCategoryItems(cat) {
+            const container = document.getElementById('category-items-list');
+            if (!cat) { container.innerHTML = ''; return; }
+            container.innerHTML = '🔄 Đang tìm các bài viết trong danh mục...';
+            try {
+                const res = await fetch(`data/index/${cat}.json?v=${Date.now()}`);
+                if (!res.ok) throw new Error('Không thể tải danh mục');
+                const items = await res.json();
+                if (!items.length) {
+                    container.innerHTML = '<div style="color:#666;">Danh mục này chưa có bài viết.</div>';
+                    return;
+                }
+                let html = '<div style="margin-bottom:3px; color:#333; font-weight:bold;">Danh sách bài viết tìm thấy:</div>';
+                items.forEach(item => {
+                    html += `<div style="padding:2px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                        <span><b>${item.id}</b> - ${item.title}</span>
+                        <button type="button" class="btn btn-secondary" style="font-size:9px; padding:1px 5px;" onclick="selectItemToLoad('${item.id}')">Chọn</button>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            } catch (err) {
+                container.innerHTML = `<div style="color:red;">Chưa có tệp index/dữ liệu cho danh mục [${cat}].</div>`;
+            }
+        }
+
+        function selectItemToLoad(id) {
+            document.getElementById('load-item-id').value = id;
+            loadItemData();
         }
 
         function addContentBlock(type, val = '', caption = '') {
