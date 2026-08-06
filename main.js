@@ -17,15 +17,29 @@ function setTheme(themeName) {
 
 function loadComponent(elementId, filePath) {
     const targetEl = document.getElementById(elementId);
-    if (!targetEl) return;
-    fetch(filePath)
-        .then((res) => res.text())
-        .then((html) => { targetEl.innerHTML = html; })
-        .catch((err) => console.error(err));
+    if (targetEl) {
+        fetch(filePath)
+            .then(res => res.text())
+            .then(html => { targetEl.innerHTML = html; })
+            .catch(console.error);
+    }
 }
 
 function getUrlParam(param) {
     return new URLSearchParams(window.location.search).get(param);
+}
+
+// Helper render thẻ item rút gọn
+function createItemCardHtml(item) {
+    return `
+        <div class="wap-card" style="display:flex; gap:5px; align-items:center;">
+            <img src="${item.thumb || 'assets/images/default.png'}" style="width:36px; height:36px; object-fit:cover; border:1px solid var(--border-color);">
+            <div style="flex:1; overflow:hidden;">
+                <a href="detail.html?id=${item.id}" style="font-weight:bold; color:var(--primary-main);">${item.title}</a>
+                <div style="font-size:10px; color:#555;">📱 ${item.screen} | 👤 ${item.vendor}</div>
+            </div>
+        </div>
+    `;
 }
 
 function routePageData() {
@@ -55,46 +69,26 @@ function routePageData() {
 
 function renderSearchResults(query) {
     const listContainer = document.getElementById('post-list');
-    const paginationContainer = document.getElementById('pagination');
     if (!listContainer) return;
 
-    if (paginationContainer) paginationContainer.innerHTML = '';
     listContainer.innerHTML = '<div class="wap-card">🔄 Đang tìm kiếm...</div>';
-
     const categories = ['gameloft', 'teamobi', 'ungdung', 'online', 'offline'];
     
-    Promise.all(
-        categories.map(cat => 
-            fetch(`data/index/${cat}.json`)
-                .then(res => res.ok ? res.json() : [])
-                .catch(() => [])
-        )
-    ).then(results => {
-        const allItems = results.flat();
-        const matchedItems = allItems.filter(item => 
-            item.title.toLowerCase().includes(query) || 
-            (item.vendor && item.vendor.toLowerCase().includes(query))
-        );
+    Promise.all(categories.map(cat => fetch(`data/index/${cat}.json`).then(r => r.ok ? r.json() : []).catch(() => [])))
+        .then(results => {
+            const matchedItems = results.flat().filter(item => 
+                item.title.toLowerCase().includes(query) || (item.vendor && item.vendor.toLowerCase().includes(query))
+            );
 
-        if (matchedItems.length === 0) {
-            listContainer.innerHTML = `<div class="wap-card">Không tìm thấy kết quả cho "<b>${query}</b>".</div>`;
-            return;
-        }
+            if (!matchedItems.length) {
+                listContainer.innerHTML = `<div class="wap-card">Không tìm thấy kết quả cho "<b>${query}</b>".</div>`;
+                return;
+            }
 
-        let html = `<div style="font-size:10px; padding:3px; color:#555;">Tìm thấy <b>${matchedItems.length}</b> kết quả:</div>`;
-        matchedItems.forEach(item => {
-            html += `
-                <div class="wap-card" style="display:flex; gap:5px; align-items:center;">
-                    <img src="${item.thumb || 'assets/images/default.png'}" style="width:40px; height:40px; object-fit:cover; border:1px solid var(--border-color);">
-                    <div style="flex:1;">
-                        <a href="detail.html?id=${item.id}" style="font-weight:bold; color:var(--primary-main);">${item.title}</a>
-                        <div style="font-size:10px; color:#555;">📱 ${item.screen} | 👤 ${item.vendor}</div>
-                    </div>
-                </div>
-            `;
+            let html = `<div style="font-size:10px; padding:3px; color:#555;">Tìm thấy <b>${matchedItems.length}</b> kết quả:</div>`;
+            matchedItems.forEach(item => html += createItemCardHtml(item));
+            listContainer.innerHTML = html;
         });
-        listContainer.innerHTML = html;
-    });
 }
 
 function renderListPage(cat, page = 1, perPage = 10) {
@@ -107,7 +101,7 @@ function renderListPage(cat, page = 1, perPage = 10) {
     fetch(`data/index/${cat}.json`)
         .then(res => res.json())
         .then(data => {
-            if (!data || data.length === 0) {
+            if (!data || !data.length) {
                 listContainer.innerHTML = '<div class="wap-card">Chưa có bài viết nào.</div>';
                 return;
             }
@@ -116,17 +110,7 @@ function renderListPage(cat, page = 1, perPage = 10) {
             const pageData = data.slice((page - 1) * perPage, page * perPage);
 
             let html = '';
-            pageData.forEach(item => {
-                html += `
-                    <div class="wap-card" style="display:flex; gap:5px; align-items:center;">
-                        <img src="${item.thumb || 'assets/images/default.png'}" style="width:40px; height:40px; object-fit:cover; border:1px solid var(--border-color);">
-                        <div style="flex:1;">
-                            <a href="detail.html?id=${item.id}" style="font-weight:bold; color:var(--primary-main);">${item.title}</a>
-                            <div style="font-size:10px; color:#555;">📱 ${item.screen} | 👤 ${item.vendor}</div>
-                        </div>
-                    </div>
-                `;
-            });
+            pageData.forEach(item => html += createItemCardHtml(item));
             listContainer.innerHTML = html;
 
             if (paginationContainer && totalPages > 1) {
@@ -137,9 +121,7 @@ function renderListPage(cat, page = 1, perPage = 10) {
                 paginationContainer.innerHTML = p2 + '</div>';
             }
         })
-        .catch(() => {
-            listContainer.innerHTML = '<div class="wap-card">Mục này chưa có dữ liệu.</div>';
-        });
+        .catch(() => { listContainer.innerHTML = '<div class="wap-card">Mục này chưa có dữ liệu.</div>'; });
 }
 
 function renderDetailPage(id) {
@@ -180,9 +162,7 @@ function renderDetailPage(id) {
 
             detailContainer.innerHTML = html;
         })
-        .catch(() => {
-            detailContainer.innerHTML = '<div class="wap-card" style="color:red;">❌ Bài viết không tồn tại!</div>';
-        });
+        .catch(() => { detailContainer.innerHTML = '<div class="wap-card" style="color:red;">❌ Bài viết không tồn tại!</div>'; });
 }
 
 function renderHomeSection(cat, containerId, limit = 4) {
@@ -192,29 +172,15 @@ function renderHomeSection(cat, containerId, limit = 4) {
     fetch(`data/index/${cat}.json`)
         .then(res => res.json())
         .then(data => {
-            if (!data || data.length === 0) {
+            if (!data || !data.length) {
                 container.innerHTML = '<div class="wap-card">Đang cập nhật...</div>';
                 return;
             }
-
-            const items = data.slice(0, limit);
             let html = '';
-            items.forEach(item => {
-                html += `
-                    <div class="wap-card" style="display:flex; gap:5px; align-items:center;">
-                        <img src="${item.thumb || 'assets/images/default.png'}" style="width:36px; height:36px; object-fit:cover; border:1px solid var(--border-color);">
-                        <div style="flex:1; overflow:hidden;">
-                            <a href="detail.html?id=${item.id}" style="font-weight:bold; color:var(--primary-main);">${item.title}</a>
-                            <div style="font-size:10px; color:#555;">📱 ${item.screen} | 👤 ${item.vendor}</div>
-                        </div>
-                    </div>
-                `;
-            });
+            data.slice(0, limit).forEach(item => html += createItemCardHtml(item));
             container.innerHTML = html;
         })
-        .catch(() => {
-            container.innerHTML = '<div class="wap-card">Chưa có dữ liệu.</div>';
-        });
+        .catch(() => { container.innerHTML = '<div class="wap-card">Chưa có dữ liệu.</div>'; });
 }
 
 async function uploadToGitHub(fileObj, folderPath, customBaseName, targetInputEl) {
@@ -224,26 +190,24 @@ async function uploadToGitHub(fileObj, folderPath, customBaseName, targetInputEl
 
     if (!token || !repo) return alert('Thiếu Token hoặc Repo!');
 
-    let baseName = customBaseName ? customBaseName.trim() : itemId;
+    let baseName = (customBaseName || itemId).trim();
     if (!baseName) return alert('Vui lòng nhập ID bài viết hoặc Tên file!');
 
     baseName = baseName.toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/-+/g, '-');
     const ext = fileObj.name.split('.').pop();
     const fileName = `${baseName}-${Date.now()}.${ext}`;
     const fullPath = `${folderPath}/${fileName}`;
-    const apiUrl = `https://api.github.com/repos/${repo}/contents/${fullPath}`;
 
     targetInputEl.value = "Đang tải lên...";
 
     const reader = new FileReader();
     reader.readAsDataURL(fileObj);
     reader.onload = async function () {
-        const base64Content = reader.result.split(',')[1];
         try {
-            const res = await fetch(apiUrl, {
+            const res = await fetch(`https://api.github.com/repos/${repo}/contents/${fullPath}`, {
                 method: 'PUT',
                 headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: `Upload: ${fileName}`, content: base64Content })
+                body: JSON.stringify({ message: `Upload: ${fileName}`, content: reader.result.split(',')[1] })
             });
 
             if (res.ok) {
