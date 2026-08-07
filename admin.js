@@ -76,14 +76,13 @@ function addBlock(type, val = '', caption = '') {
     const div = document.createElement('div');
     div.className = 'wap-card content-block-item';
     div.dataset.type = type;
-    div.draggable = true;
     const uid = 'img-' + Date.now();
 
     div.innerHTML = type === 'text' ? `
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <strong>📝 Đoạn Văn</strong>
             <div style="display:flex; align-items:center; gap:4px;">
-                <span class="drag-handle" title="Kéo để sắp xếp">⋮⋮</span>
+                <span class="drag-handle" draggable="true" title="Kéo để sắp xếp">⋮⋮</span>
                 <button type="button" class="btn btn-danger btn-remove">Xóa</button>
             </div>
         </div>
@@ -92,7 +91,7 @@ function addBlock(type, val = '', caption = '') {
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <strong>🖼️ Ảnh Minh Họa</strong>
             <div style="display:flex; align-items:center; gap:4px;">
-                <span class="drag-handle" title="Kéo để sắp xếp">⋮⋮</span>
+                <span class="drag-handle" draggable="true" title="Kéo để sắp xếp">⋮⋮</span>
                 <button type="button" class="btn btn-danger btn-remove">Xóa</button>
             </div>
         </div>
@@ -111,14 +110,13 @@ function addDownloadGroup(title = '', files = []) {
     const groupDiv = document.createElement('div');
     groupDiv.className = 'wap-card dl-group-item';
     groupDiv.style.cssText = 'width: 100%; box-sizing: border-box; text-align: left;';
-    groupDiv.draggable = true;
     const gId = `dl-files-${groupCounter}`;
 
     groupDiv.innerHTML = `
         <div style="display:flex; justify-content:space-between; margin-bottom:2px; align-items:center;">
             <strong style="color:var(--primary-main,#007bff)">Khối File #${groupCounter}</strong>
             <div style="display:flex; align-items:center; gap:4px;">
-                <span class="drag-handle" title="Kéo để sắp xếp">⋮⋮</span>
+                <span class="drag-handle" draggable="true" title="Kéo để sắp xếp">⋮⋮</span>
                 <button type="button" class="btn btn-danger btn-remove">Xóa Khối</button>
             </div>
         </div>
