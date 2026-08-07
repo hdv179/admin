@@ -76,6 +76,7 @@ function addBlock(type, val = '', caption = '') {
     const div = document.createElement('div');
     div.className = 'wap-card content-block-item';
     div.dataset.type = type;
+    div.draggable = true;
     const uid = 'img-' + Date.now();
 
     div.innerHTML = type === 'text' ? `
@@ -110,6 +111,7 @@ function addDownloadGroup(title = '', files = []) {
     const groupDiv = document.createElement('div');
     groupDiv.className = 'wap-card dl-group-item';
     groupDiv.style.cssText = 'width: 100%; box-sizing: border-box; text-align: left;';
+    groupDiv.draggable = true;
     const gId = `dl-files-${groupCounter}`;
 
     groupDiv.innerHTML = `
