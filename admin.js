@@ -58,8 +58,15 @@ function saveConfig() {
 }
 
 function resetForm() {
+    getEl('game-id').value = '';
+    getEl('game-category').value = 'gameloft';
+    getEl('game-title').value = '';
+    getEl('game-vendor').value = '';
+    getEl('game-screen').value = 'Multi screen';
+    getEl('game-version').value = '1.0';
     getEl('blocks-container').innerHTML = '';
     getEl('dl-groups-container').innerHTML = '';
+    groupCounter = 0;
     addBlock('text');
     addDownloadGroup();
 }
@@ -316,6 +323,7 @@ async function uploadToGitHub(file, folderPath, baseName, targetInput) {
 async function loadItemData(id) {
     if (!id) return alert('Không tìm thấy Mã ID!');
     showStatus(`⏳ Đang tải bài [${id}]...`, 'success');
+    resetForm();
 
     const token = document.getElementById('gh-token').value.trim();
     const repo = document.getElementById('gh-repo').value.trim();
@@ -334,10 +342,9 @@ async function loadItemData(id) {
         document.getElementById('game-version').value = d.version || '1.0';
 
         document.getElementById('blocks-container').innerHTML = '';
-        (d.blocks || [{type:'text'}]).forEach(b => addBlock(b.type, b.value, b.caption));
-
         document.getElementById('dl-groups-container').innerHTML = '';
         groupCounter = 0;
+        (d.blocks || [{type:'text'}]).forEach(b => addBlock(b.type, b.value, b.caption));
         (d.downloads || [{}]).forEach(g => addDownloadGroup(g.groupTitle, g.files));
 
         showStatus(`✅ Đã nạp bài viết [${id}]!`, 'success');
