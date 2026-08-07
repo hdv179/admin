@@ -376,6 +376,32 @@ function collectDownloads() {
     return downloads;
 }
 
+async function removeItemFromIndex(repo, token, category, itemId) {
+    const idxUrl = `https://api.github.com/repos/${repo}/contents/data/index/${category}.json`;
+    const idxCheck = await fetch(idxUrl, { headers: { 'Authorization': `token ${token}` } });
+    if (!idxCheck.ok) {
+        if (idxCheck.status === 404) return;
+        throw new Error((await idxCheck.json()).message || 'Không đọc được index');
+    }
+
+    const d = await idxCheck.json();
+    let idxItems = [];
+    try {
+        idxItems = JSON.parse(fromB64(d.content));
+    } catch {
+        idxItems = [];
+    }
+
+    if (!Array.isArray(idxItems)) idxItems = [];
+    idxItems = idxItems.filter(i => i.id !== itemId);
+
+    await fetch(idxUrl, {
+        method: 'PUT',
+        headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: `Remove ${itemId}`, content: toB64(JSON.stringify(idxItems, null, 2)), sha: d.sha })
+    });
+}
+
 async function handleFormSubmit(e) {
     e.preventDefault();
     const token = getEl('gh-token').value.trim();
@@ -422,6 +448,7 @@ async function handleFormSubmit(e) {
             idxItems = JSON.parse(fromB64(d.content));
         }
 
+        if (!Array.isArray(idxItems)) idxItems = [];
         idxItems = idxItems.filter(i => i.id !== itemId);
         idxItems.unshift({ id: itemId, title: itemPayload.title, vendor: itemPayload.vendor, screen: itemPayload.screen, thumb: thumbUrl });
 
@@ -454,16 +481,7 @@ async function deleteItemFromList(itemId, category) {
             });
         }
 
-        const idxUrl = `https://api.github.com/repos/${repo}/contents/data/index/${category}.json`;
-        const idxCheck = await fetch(idxUrl, { headers: { 'Authorization': `token ${token}` } });
-        if (idxCheck.ok) {
-            const d = await idxCheck.json();
-            const idxItems = JSON.parse(fromB64(d.content)).filter(i => i.id !== itemId);
-            await fetch(idxUrl, {
-                method: 'PUT', headers,
-                body: JSON.stringify({ message: `Remove ${itemId}`, content: toB64(JSON.stringify(idxItems, null, 2)), sha: d.sha })
-            });
-        }
+        await removeItemFromIndex(repo, token, category, itemId);
 
         showStatus(`🗑️ Đã xóa bài viết [${itemId}]!`, 'success');
         fetchCategoryItems(category);
@@ -491,16 +509,7 @@ async function deleteItem() {
             });
         }
 
-        const idxUrl = `https://api.github.com/repos/${repo}/contents/data/index/${category}.json`;
-        const idxCheck = await fetch(idxUrl, { headers: { 'Authorization': `token ${token}` } });
-        if (idxCheck.ok) {
-            const d = await idxCheck.json();
-            const idxItems = JSON.parse(fromB64(d.content)).filter(i => i.id !== itemId);
-            await fetch(idxUrl, {
-                method: 'PUT', headers,
-                body: JSON.stringify({ message: `Remove ${itemId}`, content: toB64(JSON.stringify(idxItems, null, 2)), sha: d.sha })
-            });
-        }
+        await removeItemFromIndex(repo, token, category, itemId);
 
         showStatus(`🗑️ Đã xóa bài viết [${itemId}]!`, 'success');
         resetForm();
