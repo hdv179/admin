@@ -16,6 +16,11 @@ function showStatus(text, type = 'success') {
     }
 }
 
+function refreshCategoryList(category = null) {
+    const selectedCategory = category || getEl('search-category')?.value || getEl('game-category')?.value;
+    if (selectedCategory) fetchCategoryItems(selectedCategory);
+}
+
 // --- KHỞI TẠO VÀ SỰ KIỆN CHÍNH ---
 document.addEventListener('DOMContentLoaded', () => {
     getEl('gh-token').value = localStorage.getItem('hdv179_gh_token') || '';
@@ -28,6 +33,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     getEl('btn-save-config')?.addEventListener('click', saveConfig);
     searchCat?.addEventListener('change', (e) => fetchCategoryItems(e.target.value));
+    getEl('btn-new-item')?.addEventListener('click', () => {
+        resetForm();
+        refreshCategoryList();
+    });
     getEl('btn-add-text')?.addEventListener('click', () => addBlock('text'));
     getEl('btn-add-image')?.addEventListener('click', () => addBlock('image'));
     getEl('btn-add-group')?.addEventListener('click', () => addDownloadGroup());
@@ -59,7 +68,7 @@ function saveConfig() {
 
 function resetForm() {
     getEl('game-id').value = '';
-    getEl('game-category').value = 'gameloft';
+    getEl('game-category').value = getEl('search-category')?.value || 'gameloft';
     getEl('game-title').value = '';
     getEl('game-vendor').value = '';
     getEl('game-screen').value = 'Multi screen';
@@ -350,6 +359,7 @@ async function loadItemData(id) {
         (d.downloads || [{}]).forEach(g => addDownloadGroup(g.groupTitle, g.files));
 
         showStatus(`✅ Đã nạp bài viết [${id}]!`, 'success');
+        refreshCategoryList(getEl('search-category')?.value || d.category || 'gameloft');
         document.getElementById('builder-form').scrollIntoView({ behavior: 'smooth' });
     } catch (err) { showStatus(`❌ ${err.message}`, 'error'); }
 }
@@ -460,7 +470,7 @@ async function handleFormSubmit(e) {
         });
 
         showStatus('🎉 Lưu thành công!', 'success');
-        fetchCategoryItems(category);
+        refreshCategoryList(category);
     } catch (err) { showStatus(`❌ Lỗi: ${err.message}`, 'error'); }
 }
 
@@ -486,7 +496,7 @@ async function deleteItemFromList(itemId, category) {
         await removeItemFromIndex(repo, token, category, itemId);
 
         showStatus(`🗑️ Đã xóa bài viết [${itemId}]!`, 'success');
-        fetchCategoryItems(category);
+        refreshCategoryList(category);
     } catch (err) { showStatus(`❌ Lỗi xóa: ${err.message}`, 'error'); }
 }
 
@@ -515,6 +525,6 @@ async function deleteItem() {
 
         showStatus(`🗑️ Đã xóa bài viết [${itemId}]!`, 'success');
         resetForm();
-        fetchCategoryItems(category);
+        refreshCategoryList(category);
     } catch (err) { showStatus(`❌ Lỗi xóa: ${err.message}`, 'error'); }
 }
