@@ -234,6 +234,7 @@ function handleDynamicClicks(e) {
     if (t.classList.contains('btn-add-file')) addFileRow(t.dataset.gid);
     if (t.classList.contains('btn-trigger-file')) document.getElementById(t.dataset.target)?.click();
     if (t.classList.contains('btn-load-item')) loadItemData(t.dataset.id);
+    if (t.classList.contains('btn-delete-item-list')) deleteItemFromList(t.dataset.id, t.dataset.category);
 }
 
 function handleDynamicUploads(e) {
@@ -275,9 +276,12 @@ async function fetchCategoryItems(cat) {
         if (!items.length) return container.innerHTML = '<div style="color:#666;">Danh mục trống.</div>';
 
         container.innerHTML = items.map(item => `
-            <div style="padding: 3px 0; border-bottom: 1px dashed #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
-                <span>🔹 <b>${item.id}</b> - ${item.title ? item.title.replace(/"/g, '&quot;') : ''}</span>
-                <button type="button" class="btn btn-secondary btn-load-item" data-id="${item.id}" style="font-size: 9px; padding: 1px 6px;">Sửa / Tải</button>
+            <div style="padding: 3px 0; border-bottom: 1px dashed #e0e0e0; display: flex; justify-content: space-between; align-items: center; gap: 4px;">
+                <span style="flex: 1;">🔹 <b>${item.id}</b> - ${item.title ? item.title.replace(/"/g, '&quot;') : ''}</span>
+                <div style="display:flex; gap:2px;">
+                    <button type="button" class="btn btn-secondary btn-load-item" data-id="${item.id}" style="font-size: 9px; padding: 1px 6px;">Sửa</button>
+                    <button type="button" class="btn btn-danger btn-delete-item-list" data-id="${item.id}" data-category="${cat}" style="font-size: 9px; padding: 1px 6px;">Xóa</button>
+                </div>
             </div>
         `).join('');
     } catch (err) {
@@ -422,6 +426,41 @@ async function handleFormSubmit(e) {
         showStatus('🎉 Lưu thành công!', 'success');
         fetchCategoryItems(category);
     } catch (err) { showStatus(`❌ Lỗi: ${err.message}`, 'error'); }
+}
+
+async function deleteItemFromList(itemId, category) {
+    const token = getEl('gh-token').value.trim();
+    const repo = getEl('gh-repo').value.trim();
+
+    if (!itemId || !confirm(`Xóa bài viết [${itemId}]?`)) return;
+    showStatus(`⏳ Đang xóa [${itemId}]...`, 'error');
+
+    try {
+        const headers = { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' };
+        const itemUrl = `https://api.github.com/repos/${repo}/contents/data/items/${itemId}.json`;
+        const iCheck = await fetch(itemUrl, { headers: { 'Authorization': `token ${token}` } });
+
+        if (iCheck.ok) {
+            await fetch(itemUrl, {
+                method: 'DELETE', headers,
+                body: JSON.stringify({ message: `Delete: ${itemId}`, sha: (await iCheck.json()).sha })
+            });
+        }
+
+        const idxUrl = `https://api.github.com/repos/${repo}/contents/data/index/${category}.json`;
+        const idxCheck = await fetch(idxUrl, { headers: { 'Authorization': `token ${token}` } });
+        if (idxCheck.ok) {
+            const d = await idxCheck.json();
+            const idxItems = JSON.parse(fromB64(d.content)).filter(i => i.id !== itemId);
+            await fetch(idxUrl, {
+                method: 'PUT', headers,
+                body: JSON.stringify({ message: `Remove ${itemId}`, content: toB64(JSON.stringify(idxItems, null, 2)), sha: d.sha })
+            });
+        }
+
+        showStatus(`🗑️ Đã xóa bài viết [${itemId}]!`, 'success');
+        fetchCategoryItems(category);
+    } catch (err) { showStatus(`❌ Lỗi xóa: ${err.message}`, 'error'); }
 }
 
 async function deleteItem() {
