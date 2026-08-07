@@ -80,11 +80,13 @@ a:hover { text-decoration: underline; }
     border: 1px solid var(--border-color);
     background-color: var(--bg-body); color: var(--text-color);
     resize: vertical; word-wrap: break-word; white-space: pre-wrap;
+    user-select: text;
+    -webkit-user-select: text;
 }
 
 .upload-box, .file-row { width: 100%; display: flex; gap: 3px; align-items: center; margin-top: 2px; }
 .drag-handle { cursor: move; color: var(--primary-main); font-weight: bold; user-select: none; }
-.content-block-item.dragging { opacity: 0.6; border-style: dashed; }
+.content-block-item.dragging, .dl-group-item.dragging { opacity: 0.6; border-style: dashed; }
 
 .status-msg { margin: 4px 3px; padding: 4px; font-size: 11px; font-weight: bold; text-align: center; }
 .status-msg.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }

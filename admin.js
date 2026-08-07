@@ -76,7 +76,6 @@ function addBlock(type, val = '', caption = '') {
     const div = document.createElement('div');
     div.className = 'wap-card content-block-item';
     div.dataset.type = type;
-    div.draggable = true;
     const uid = 'img-' + Date.now();
 
     div.innerHTML = type === 'text' ? `
@@ -111,7 +110,6 @@ function addDownloadGroup(title = '', files = []) {
     const groupDiv = document.createElement('div');
     groupDiv.className = 'wap-card dl-group-item';
     groupDiv.style.cssText = 'width: 100%; box-sizing: border-box; text-align: left;';
-    groupDiv.draggable = true;
     const gId = `dl-files-${groupCounter}`;
 
     groupDiv.innerHTML = `
@@ -169,7 +167,9 @@ function addFileRow(gId, label = '', url = '', screenVal = 'Multi', osVal = 's40
 
 // --- XỬ LÝ SỰ KIỆN ĐỘNG ---
 function handleBlockDragStart(e) {
-    const item = e.target.closest('.content-block-item');
+    const handle = e.target.closest('.drag-handle');
+    if (!handle) return;
+    const item = handle.closest('.content-block-item');
     if (!item) return;
     draggedBlock = item;
     item.classList.add('dragging');
@@ -202,7 +202,9 @@ function handleBlockDragEnd() {
 }
 
 function handleGroupDragStart(e) {
-    const item = e.target.closest('.dl-group-item');
+    const handle = e.target.closest('.drag-handle');
+    if (!handle) return;
+    const item = handle.closest('.dl-group-item');
     if (!item) return;
     draggedGroup = item;
     item.classList.add('dragging');
