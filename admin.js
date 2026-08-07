@@ -1,51 +1,65 @@
 let groupCounter = 0;
+let draggedBlock = null;
+let draggedGroup = null;
 
 // --- UTILS & HELPERS ---
+const getEl = id => document.getElementById(id);
 const toB64 = str => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1)));
 const fromB64 = str => decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
-function showStatus(text, type) {
-    const msg = document.getElementById('status-msg');
-    msg.innerText = text;
-    msg.className = `status-msg ${type}`;
+function showStatus(text, type = 'success') {
+    const msg = getEl('status-msg');
+    if (msg) {
+        msg.innerText = text;
+        msg.className = `status-msg ${type}`;
+    }
 }
 
 // --- KHỞI TẠO VÀ SỰ KIỆN CHÍNH ---
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Tải cấu hình
-    document.getElementById('gh-token').value = localStorage.getItem('hdv179_gh_token') || '';
-    document.getElementById('gh-repo').value = localStorage.getItem('hdv179_gh_repo') || 'hdv179/wap';
+    getEl('gh-token').value = localStorage.getItem('hdv179_gh_token') || '';
+    getEl('gh-repo').value = localStorage.getItem('hdv179_gh_repo') || 'hdv179/wap';
 
     resetForm();
 
-    // 2. Tải danh mục ban đầu
-    const searchCat = document.getElementById('search-category');
-    if (searchCat.value) fetchCategoryItems(searchCat.value);
+    const searchCat = getEl('search-category');
+    if (searchCat?.value) fetchCategoryItems(searchCat.value);
 
-    // 3. Gắn sự kiện tĩnh
-    document.getElementById('btn-save-config').addEventListener('click', saveConfig);
-    searchCat.addEventListener('change', (e) => fetchCategoryItems(e.target.value));
-    document.getElementById('btn-add-text').addEventListener('click', () => addBlock('text'));
-    document.getElementById('btn-add-image').addEventListener('click', () => addBlock('image'));
-    document.getElementById('btn-add-group').addEventListener('click', () => addDownloadGroup());
-    document.getElementById('builder-form').addEventListener('submit', handleFormSubmit);
-    document.getElementById('btn-delete-item').addEventListener('click', deleteItem);
+    getEl('btn-save-config')?.addEventListener('click', saveConfig);
+    searchCat?.addEventListener('change', (e) => fetchCategoryItems(e.target.value));
+    getEl('btn-add-text')?.addEventListener('click', () => addBlock('text'));
+    getEl('btn-add-image')?.addEventListener('click', () => addBlock('image'));
+    getEl('btn-add-group')?.addEventListener('click', () => addDownloadGroup());
+    getEl('builder-form')?.addEventListener('submit', handleFormSubmit);
+    getEl('btn-delete-item')?.addEventListener('click', deleteItem);
 
-    // 4. Ủy quyền sự kiện động (Event Delegation)
     document.addEventListener('click', handleDynamicClicks);
     document.addEventListener('change', handleDynamicUploads);
+
+    const blocksContainer = getEl('blocks-container');
+    blocksContainer?.addEventListener('dragstart', handleBlockDragStart);
+    blocksContainer?.addEventListener('dragover', handleBlockDragOver);
+    blocksContainer?.addEventListener('drop', handleBlockDrop);
+    blocksContainer?.addEventListener('dragend', handleBlockDragEnd);
+
+    const groupsContainer = getEl('dl-groups-container');
+    groupsContainer?.addEventListener('dragstart', handleGroupDragStart);
+    groupsContainer?.addEventListener('dragover', handleGroupDragOver);
+    groupsContainer?.addEventListener('drop', handleGroupDrop);
+    groupsContainer?.addEventListener('dragend', handleGroupDragEnd);
 });
 
 function saveConfig() {
-    localStorage.setItem('hdv179_gh_token', document.getElementById('gh-token').value.trim());
-    localStorage.setItem('hdv179_gh_repo', document.getElementById('gh-repo').value.trim());
+    localStorage.setItem('hdv179_gh_token', getEl('gh-token').value.trim());
+    localStorage.setItem('hdv179_gh_repo', getEl('gh-repo').value.trim());
     alert('Đã lưu cấu hình API!');
-    fetchCategoryItems(document.getElementById('search-category').value);
+    fetchCategoryItems(getEl('search-category').value);
 }
 
 function resetForm() {
-    document.getElementById('blocks-container').innerHTML = '';
-    document.getElementById('dl-groups-container').innerHTML = '';
+    getEl('blocks-container').innerHTML = '';
+    getEl('dl-groups-container').innerHTML = '';
     addBlock('text');
     addDownloadGroup();
 }
@@ -55,21 +69,34 @@ function addBlock(type, val = '', caption = '') {
     const div = document.createElement('div');
     div.className = 'wap-card content-block-item';
     div.dataset.type = type;
+    div.draggable = true;
     const uid = 'img-' + Date.now();
 
     div.innerHTML = type === 'text' ? `
-        <div style="display:flex; justify-content:space-between;"><strong>📝 Đoạn Văn</strong><button type="button" class="btn btn-danger btn-remove">Xóa</button></div>
-        <textarea class="form-control block-val" rows="3">${val}</textarea>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong>📝 Đoạn Văn</strong>
+            <div style="display:flex; align-items:center; gap:4px;">
+                <span class="drag-handle" title="Kéo để sắp xếp">⋮⋮</span>
+                <button type="button" class="btn btn-danger btn-remove">Xóa</button>
+            </div>
+        </div>
+        <textarea class="form-control block-val" rows="3">${escapeHtml(val)}</textarea>
     ` : `
-        <div style="display:flex; justify-content:space-between;"><strong>🖼️ Ảnh Minh Họa</strong><button type="button" class="btn btn-danger btn-remove">Xóa</button></div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong>🖼️ Ảnh Minh Họa</strong>
+            <div style="display:flex; align-items:center; gap:4px;">
+                <span class="drag-handle" title="Kéo để sắp xếp">⋮⋮</span>
+                <button type="button" class="btn btn-danger btn-remove">Xóa</button>
+            </div>
+        </div>
         <div class="upload-box" style="display:flex; gap:3px;">
-            <input type="text" class="form-control block-val" id="${uid}-input" placeholder="assets/images/..." value="${val}" style="flex:1;">
+            <input type="text" class="form-control block-val" id="${uid}-input" placeholder="assets/images/..." value="${escapeHtml(val)}" style="flex:1;">
             <input type="file" id="${uid}-file" class="upload-file-input" data-uid="${uid}" data-folder="assets/images" data-is-image="true" style="display:none;">
             <button type="button" class="btn btn-upload btn-trigger-file" data-target="${uid}-file">📤 Up</button>
         </div>
-        <input type="text" class="form-control block-caption" placeholder="Chú thích ảnh" value="${caption}" style="margin-top:2px;">
+        <input type="text" class="form-control block-caption" placeholder="Chú thích ảnh" value="${escapeHtml(caption)}" style="margin-top:2px;">
     `;
-    document.getElementById('blocks-container').appendChild(div);
+    getEl('blocks-container').appendChild(div);
 }
 
 function addDownloadGroup(title = '', files = []) {
@@ -77,25 +104,29 @@ function addDownloadGroup(title = '', files = []) {
     const groupDiv = document.createElement('div');
     groupDiv.className = 'wap-card dl-group-item';
     groupDiv.style.cssText = 'width: 100%; box-sizing: border-box; text-align: left;';
+    groupDiv.draggable = true;
     const gId = `dl-files-${groupCounter}`;
 
     groupDiv.innerHTML = `
-        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:2px; align-items:center;">
             <strong style="color:var(--primary-main,#007bff)">Khối File #${groupCounter}</strong>
-            <button type="button" class="btn btn-danger btn-remove">Xóa Khối</button>
+            <div style="display:flex; align-items:center; gap:4px;">
+                <span class="drag-handle" title="Kéo để sắp xếp">⋮⋮</span>
+                <button type="button" class="btn btn-danger btn-remove">Xóa Khối</button>
+            </div>
         </div>
-        <input type="text" class="form-control group-title" placeholder="Tiêu đề khối" value="${title}" style="margin-bottom:3px; width:100%; box-sizing:border-box;">
+        <input type="text" class="form-control group-title" placeholder="Tiêu đề khối" value="${escapeHtml(title)}" style="margin-bottom:3px; width:100%; box-sizing:border-box;">
         <div id="${gId}" style="width:100%;"></div>
         <button type="button" class="btn btn-secondary btn-block btn-add-file" data-gid="${gId}">+ Thêm File</button>
     `;
-    document.getElementById('dl-groups-container').appendChild(groupDiv);
+    getEl('dl-groups-container').appendChild(groupDiv);
 
     if (files.length) files.forEach(f => addFileRow(gId, f.label, f.url, f.screen, f.os));
     else addFileRow(gId);
 }
 
 function addFileRow(gId, label = '', url = '', screenVal = 'Multi', osVal = 's40') {
-    const container = document.getElementById(gId);
+    const container = getEl(gId);
     if (!container) return;
     const uid = 'file-' + Date.now() + Math.random().toString(36).substr(2, 3);
     const screens = ['Multi', '128x128', '128x160', '176x208', '176x220', '240x320', '320x240', '360x640'];
@@ -106,7 +137,7 @@ function addFileRow(gId, label = '', url = '', screenVal = 'Multi', osVal = 's40
     
     row.innerHTML = `
         <div style="display:flex; gap:4px; width:100%;">
-            <input type="text" class="form-control file-label" placeholder="Tên hiển thị (.JAR)" value="${label}" style="flex:1; min-width:0; width:100%; box-sizing:border-box;">
+            <input type="text" class="form-control file-label" placeholder="Tên hiển thị (.JAR)" value="${escapeHtml(label)}" style="flex:1; min-width:0; width:100%; box-sizing:border-box;">
             <input type="text" class="form-control custom-file-name" id="${uid}-custom" placeholder="Tên tệp tùy chọn" style="flex:1; min-width:0; width:100%; box-sizing:border-box;">
         </div>
         <div style="display:flex; gap:4px; width:100%;">
@@ -120,7 +151,7 @@ function addFileRow(gId, label = '', url = '', screenVal = 'Multi', osVal = 's40
             </select>
         </div>
         <div class="upload-box" style="display:flex; gap:4px; width:100%;">
-            <input type="text" class="form-control file-url" id="${uid}-input" placeholder="assets/files/..." value="${url}" style="flex:1; min-width:0; width:100%; box-sizing:border-box;">
+            <input type="text" class="form-control file-url" id="${uid}-input" placeholder="assets/files/..." value="${escapeHtml(url)}" style="flex:1; min-width:0; width:100%; box-sizing:border-box;">
             <input type="file" id="${uid}-file" class="upload-file-input" data-uid="${uid}" data-folder="assets/files" data-is-image="false" style="display:none;">
             <button type="button" class="btn btn-upload btn-trigger-file" data-target="${uid}-file">📤 Up</button>
             <button type="button" class="btn btn-danger btn-remove-row">X</button>
@@ -130,6 +161,72 @@ function addFileRow(gId, label = '', url = '', screenVal = 'Multi', osVal = 's40
 }
 
 // --- XỬ LÝ SỰ KIỆN ĐỘNG ---
+function handleBlockDragStart(e) {
+    const item = e.target.closest('.content-block-item');
+    if (!item) return;
+    draggedBlock = item;
+    item.classList.add('dragging');
+    if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', '');
+    }
+}
+
+function handleBlockDragOver(e) {
+    const item = e.target.closest('.content-block-item');
+    if (!item || !draggedBlock || item === draggedBlock) return;
+    e.preventDefault();
+    const rect = item.getBoundingClientRect();
+    const isAfter = e.clientY > rect.top + rect.height / 2;
+    const container = getEl('blocks-container');
+    container.insertBefore(draggedBlock, isAfter ? item.nextSibling : item);
+}
+
+function handleBlockDrop(e) {
+    e.preventDefault();
+    if (!draggedBlock) return;
+    draggedBlock.classList.remove('dragging');
+    draggedBlock = null;
+}
+
+function handleBlockDragEnd() {
+    document.querySelectorAll('.content-block-item.dragging').forEach(el => el.classList.remove('dragging'));
+    draggedBlock = null;
+}
+
+function handleGroupDragStart(e) {
+    const item = e.target.closest('.dl-group-item');
+    if (!item) return;
+    draggedGroup = item;
+    item.classList.add('dragging');
+    if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', '');
+    }
+}
+
+function handleGroupDragOver(e) {
+    const item = e.target.closest('.dl-group-item');
+    if (!item || !draggedGroup || item === draggedGroup) return;
+    e.preventDefault();
+    const rect = item.getBoundingClientRect();
+    const isAfter = e.clientY > rect.top + rect.height / 2;
+    const container = getEl('dl-groups-container');
+    container.insertBefore(draggedGroup, isAfter ? item.nextSibling : item);
+}
+
+function handleGroupDrop(e) {
+    e.preventDefault();
+    if (!draggedGroup) return;
+    draggedGroup.classList.remove('dragging');
+    draggedGroup = null;
+}
+
+function handleGroupDragEnd() {
+    document.querySelectorAll('.dl-group-item.dragging').forEach(el => el.classList.remove('dragging'));
+    draggedGroup = null;
+}
+
 function handleDynamicClicks(e) {
     const t = e.target;
     if (t.classList.contains('btn-remove')) t.closest('.content-block-item, .dl-group-item')?.remove();
@@ -244,43 +341,49 @@ async function loadItemData(id) {
     } catch (err) { showStatus(`❌ ${err.message}`, 'error'); }
 }
 
-async function handleFormSubmit(e) {
-    e.preventDefault();
-    const token = document.getElementById('gh-token').value.trim();
-    const repo = document.getElementById('gh-repo').value.trim();
-    const category = document.getElementById('game-category').value;
-    const itemId = document.getElementById('game-id').value.trim();
-
-    if (!token || !repo) return showStatus('Thiếu Token hoặc Repo!', 'error');
-    showStatus('⏳ Đang lưu bài viết...', 'success');
-
-    let thumbUrl = '';
+function collectBlocks() {
     const blocks = [];
     document.querySelectorAll('.content-block-item').forEach(el => {
-        const val = el.querySelector('.block-val').value.trim();
-        if (val) {
-            const type = el.dataset.type;
-            blocks.push({ type, value: val, caption: el.querySelector('.block-caption')?.value.trim() });
-            if (type === 'image' && !thumbUrl) thumbUrl = val;
-        }
+        const val = el.querySelector('.block-val')?.value.trim();
+        if (!val) return;
+        blocks.push({ type: el.dataset.type, value: val, caption: el.querySelector('.block-caption')?.value.trim() });
     });
+    return blocks;
+}
 
+function collectDownloads() {
     const downloads = [];
     document.querySelectorAll('.dl-group-item').forEach(gEl => {
         const files = [];
         gEl.querySelectorAll('.file-row').forEach(fRow => {
-            const l = fRow.querySelector('.file-label').value.trim();
-            const u = fRow.querySelector('.file-url').value.trim();
-            if (l && u) files.push({ label: l, url: u, screen: fRow.querySelector('.file-screen').value, os: fRow.querySelector('.file-os').value });
+            const label = fRow.querySelector('.file-label')?.value.trim();
+            const url = fRow.querySelector('.file-url')?.value.trim();
+            if (label && url) files.push({ label, url, screen: fRow.querySelector('.file-screen')?.value, os: fRow.querySelector('.file-os')?.value });
         });
-        if (files.length) downloads.push({ groupTitle: gEl.querySelector('.group-title').value.trim() || 'DOWNLOAD', files });
+        if (files.length) downloads.push({ groupTitle: gEl.querySelector('.group-title')?.value.trim() || 'DOWNLOAD', files });
     });
+    return downloads;
+}
+
+async function handleFormSubmit(e) {
+    e.preventDefault();
+    const token = getEl('gh-token').value.trim();
+    const repo = getEl('gh-repo').value.trim();
+    const category = getEl('game-category').value;
+    const itemId = getEl('game-id').value.trim();
+
+    if (!token || !repo) return showStatus('Thiếu Token hoặc Repo!', 'error');
+    showStatus('⏳ Đang lưu bài viết...', 'success');
+
+    const blocks = collectBlocks();
+    const downloads = collectDownloads();
+    const thumbUrl = blocks.find(b => b.type === 'image')?.value || '';
 
     const itemPayload = {
-        id: itemId, title: document.getElementById('game-title').value.trim(),
-        vendor: document.getElementById('game-vendor').value.trim(), category,
-        screen: document.getElementById('game-screen').value.trim(),
-        version: document.getElementById('game-version').value.trim(),
+        id: itemId, title: getEl('game-title').value.trim(),
+        vendor: getEl('game-vendor').value.trim(), category,
+        screen: getEl('game-screen').value.trim(),
+        version: getEl('game-version').value.trim(),
         date: new Date().toLocaleDateString('vi-VN'), blocks, downloads
     };
 
@@ -322,10 +425,10 @@ async function handleFormSubmit(e) {
 }
 
 async function deleteItem() {
-    const token = document.getElementById('gh-token').value.trim();
-    const repo = document.getElementById('gh-repo').value.trim();
-    const itemId = document.getElementById('game-id').value.trim();
-    const category = document.getElementById('game-category').value;
+    const token = getEl('gh-token').value.trim();
+    const repo = getEl('gh-repo').value.trim();
+    const itemId = getEl('game-id').value.trim();
+    const category = getEl('game-category').value;
 
     if (!itemId || !confirm(`Xóa bài viết [${itemId}]?`)) return;
     showStatus(`⏳ Đang xóa [${itemId}]...`, 'error');

@@ -83,7 +83,8 @@ a:hover { text-decoration: underline; }
 }
 
 .upload-box, .file-row { width: 100%; display: flex; gap: 3px; align-items: center; margin-top: 2px; }
-.file-input-hidden { display: none; }
+.drag-handle { cursor: move; color: var(--primary-main); font-weight: bold; user-select: none; }
+.content-block-item.dragging { opacity: 0.6; border-style: dashed; }
 
 .status-msg { margin: 4px 3px; padding: 4px; font-size: 11px; font-weight: bold; text-align: center; }
 .status-msg.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
