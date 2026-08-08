@@ -143,7 +143,7 @@ function addFileRow(gId, label = '', url = '', screenVal = 'Multi', osVal = 's40
     const container = getEl(gId);
     if (!container) return;
     const uid = 'file-' + Date.now() + Math.random().toString(36).substr(2, 3);
-    const screens = ['Multi', '128x128', '128x160', '176x208', '176x220', '240x320', '320x240', '360x640'];
+    const screens = ['Multi', '128x128', '128x160', '176x208', '176x220', '240x320', '240x400', '320x240', '360x640'];
 
     const row = document.createElement('div');
     row.className = 'file-row';
